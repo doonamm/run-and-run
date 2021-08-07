@@ -2,7 +2,8 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const frame = new Image();
 let dataFrame;
-let speed = 4;
+let speed = 5;
+let auto_running = false;
 const frame_offset = {
     width: 96,
     height: 104
@@ -17,13 +18,16 @@ const pos = {
     x: (window.innerWidth/2 - frame_offset.width/2)|0,
     y: (window.innerHeight/2 - frame_offset.height/2)|0
 }
+const autoMovePos = {
+    x: 0,
+    y: 0
+}
 const keyState = {
     left: false,
     right: false,
     up: false,
     down: false
 }
-console.log(pos.x, pos.y);
 const status = {
     direction: 'down',
     frame_index: 0,
@@ -37,7 +41,14 @@ const status = {
         delay: 60,
         loop: undefined
     },
+    autoMove: {
+        isLoop: false,
+        loop: undefined
+    },
 }
+
+document.addEventListener('click', cursorEffect);
+document.addEventListener('click', autoMove);
 
 window.addEventListener('keydown', (e) => {
     switch (e.code) {
@@ -61,9 +72,9 @@ window.addEventListener('keydown', (e) => {
             status.direction = 'down';
             keyState['down'] = true;
             break;
-        case 'Space':
-            speed = 20;
-            break;
+        // case 'Space':
+        //     speed = 20;
+        //     break;
     }
 });
 
@@ -85,9 +96,9 @@ window.addEventListener('keyup', (e) => {
         case 'ArrowDown':
             keyState['down'] = false;
             break;
-        case 'Space':
-            speed = 4;
-            break;
+        // case 'Space':
+        //     speed = 5;
+        //     break;
     }
 });
 
@@ -119,23 +130,23 @@ function moveState(){
     canvas.style.top = pos.y + 'px';
     canvas.style.left = pos.x + 'px';
 
-    if(checkIsMoving && !status.interval_move.isLoop){
-        clearInterval(status.interval_stay.loop);
-        status.interval_stay.isLoop = false;
-
-        draw();
-        status.interval_move.loop = setInterval(draw, status.interval_move.delay);
-        status.interval_move.isLoop = true;
+    if(!status.autoMove.isLoop){
+        if(checkIsMoving && !status.interval_move.isLoop){
+            clearInterval(status.interval_stay.loop);
+            status.interval_stay.isLoop = false;
+            status.frame_index = 0;
+            draw();
+            status.interval_move.loop = setInterval(draw, status.interval_move.delay);
+            status.interval_move.isLoop = true;
+        }
+        else if(!checkIsMoving && !status.interval_stay.isLoop){
+            clearInterval(status.interval_move.loop);
+            status.interval_move.isLoop = false;
+            resetFrame();
+            status.interval_stay.loop = setInterval(draw, status.interval_stay.delay);
+            status.interval_stay.isLoop = true;
+        }
     }
-    else if(!checkIsMoving && !status.interval_stay.isLoop){
-        clearInterval(status.interval_move.loop);
-        status.interval_move.isLoop = false;
-
-        draw();
-        status.interval_stay.loop = setInterval(draw, status.interval_stay.delay);
-        status.interval_stay.isLoop = true;
-    }
-
     setTimeout(moveState, 10);
 }
 
@@ -181,4 +192,90 @@ async function fetchData(){
     const spritesheetJSON = await fetch('./asset/spritesheet.json');
     const json = await spritesheetJSON.json();
     return json.frames;
+}
+
+function cursorEffect(e){
+    const {clientX: x, clientY: y} = e;
+    const ripple = document.createElement('div');
+
+    ripple.className = 'ripple';
+    ripple.style.left = x - 53 + 'px';
+    ripple.style.top = y - 53 + 'px';
+
+    ripple.addEventListener('animationend', ()=>{
+        document.body.removeChild(ripple);
+    });
+
+    document.body.appendChild(ripple);
+}
+
+function autoMove(e){
+    const {clientX: des_x, clientY: des_y} = e;
+    clearAutoMove();
+
+    if(Math.abs(des_x - pos.x) >= Math.abs(des_y - pos.y))
+        horizontalMoveTo(des_x).then(()=>verticalMoveTo(des_y));
+    else
+        verticalMoveTo(des_y).then(()=>horizontalMoveTo(des_x));
+}
+function resetFrame(){
+    status.frame_index = 0;
+    draw();
+}
+
+function horizontalMoveTo(new_pos){
+    return new Promise((resolve)=>{
+        const isGoToRight = (new_pos - pos.x) > 0;
+        status.direction = isGoToRight ? 'right' : 'left';
+        startAutoMove();
+        const changeValue = isGoToRight ? speed : -speed;
+        status.autoMove.loop = setInterval(()=>{
+            const a = isGoToRight ? new_pos - pos.x - frame_offset.width/3 : pos.x - new_pos + frame_offset.width/3;
+            if(a >= speed){
+                pos.x += changeValue;
+                canvas.style.left = pos.x + 'px';
+            }
+            else {
+                clearAutoMove();
+                resolve();
+            }
+        }, 10);
+    });
+}
+function verticalMoveTo(new_pos){
+    return new Promise((resolve)=>{
+        const isGoDown = (new_pos - pos.y) > 0;
+        status.direction = isGoDown ? 'down' : 'up';
+        startAutoMove();
+        const changeValue = isGoDown ? speed : -speed;
+        status.autoMove.loop = setInterval(()=>{
+            const a = isGoDown ? new_pos - pos.y - 72 : pos.y - new_pos + 72;
+            if(a >= speed){
+                pos.y += changeValue;
+                canvas.style.top = pos.y + 'px';
+            }
+            else {
+                clearAutoMove();
+                resolve();
+            }
+        }, 10);
+    });
+}
+
+function clearAutoMove(){
+    clearInterval(status.autoMove.loop);
+    clearInterval(status.interval_move.loop);
+
+    status.autoMove.isLoop = false;
+    status.interval_move.isLoop = false;
+
+    resetFrame();
+}
+
+function startAutoMove(){
+    clearInterval(status.interval_move.loop);
+    status.autoMove.isLoop = true;
+    status.interval_move.isLoop = true;
+    status.frame_index = 0;
+    status.interval_move.loop = setInterval(draw, status.interval_move.delay);
 }

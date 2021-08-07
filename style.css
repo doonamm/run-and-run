@@ -13,5 +13,24 @@ canvas{
     position: absolute;
     top: 0;
     left: 0;
-    width: 65px;
+    width: 66px;
+}
+
+.ripple{
+    width: 100px;
+    height: 100px;
+    border: 3px solid #0a0;
+    border-radius: 50%;
+    animation: ripple .28s linear forwards;
+    position: fixed;
+}
+
+@keyframes ripple{
+    50%{
+        transform: scale(.5);
+    }
+    100%{
+        transform: scale(0);
+        border: 5px solid #0a0;
+    }
 }
