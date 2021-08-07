@@ -2,7 +2,7 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const frame = new Image();
 let dataFrame;
-let speed = 5;
+let speed = 4;
 const frame_offset = {
     width: 96,
     height: 104
