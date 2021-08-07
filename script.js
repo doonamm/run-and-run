@@ -86,7 +86,7 @@ window.addEventListener('keyup', (e) => {
             keyState['down'] = false;
             break;
         case 'Space':
-            speed = 5;
+            speed = 4;
             break;
     }
 });
