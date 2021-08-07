@@ -129,24 +129,24 @@ function moveState(){
 
     canvas.style.top = pos.y + 'px';
     canvas.style.left = pos.x + 'px';
-
-    if(!status.autoMove.isLoop){
-        if(checkIsMoving && !status.interval_move.isLoop){
-            clearInterval(status.interval_stay.loop);
-            status.interval_stay.isLoop = false;
-            status.frame_index = 0;
-            draw();
-            status.interval_move.loop = setInterval(draw, status.interval_move.delay);
-            status.interval_move.isLoop = true;
-        }
-        else if(!checkIsMoving && !status.interval_stay.isLoop){
-            clearInterval(status.interval_move.loop);
-            status.interval_move.isLoop = false;
-            resetFrame();
-            status.interval_stay.loop = setInterval(draw, status.interval_stay.delay);
-            status.interval_stay.isLoop = true;
-        }
+    if(checkIsMoving && status.autoMove.isLoop)
+        clearAutoMove();
+    if(checkIsMoving && !status.interval_move.isLoop){
+        clearInterval(status.interval_stay.loop);
+        status.interval_stay.isLoop = false;
+        status.frame_index = 0;
+        draw();
+        status.interval_move.loop = setInterval(draw, status.interval_move.delay);
+        status.interval_move.isLoop = true;
     }
+    else if(!checkIsMoving && !status.interval_stay.isLoop){
+        clearInterval(status.interval_move.loop);
+        status.interval_move.isLoop = false;
+        resetFrame();
+        status.interval_stay.loop = setInterval(draw, status.interval_stay.delay);
+        status.interval_stay.isLoop = true;
+    }
+    
     setTimeout(moveState, 10);
 }
 
